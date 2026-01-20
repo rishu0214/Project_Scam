@@ -9,70 +9,57 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// 🔹 Serve frontend files
+// ✅ Serve frontend
 app.use(express.static(path.join(__dirname, "public")));
 
-// 🔹 MongoDB
-mongoose
-  .connect(process.env.MONGO_URI)
+// ✅ MongoDB
+mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB Connected"))
-  .catch(err => console.error("Mongo Error:", err));
+  .catch(err => console.error(err));
 
-// 🔹 Schema
-const UserSchema = new mongoose.Schema({
-  fullName: String,
-  email: { type: String, unique: true },
-  password: String,
-  inviteCode: String
-});
-
-const User = mongoose.model("User", UserSchema);
-
-// 🔹 HOME → LOGIN PAGE
+// ✅ Root → index.html
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-// 🔹 SIGNUP
+// ✅ Signup
 app.post("/signup", async (req, res) => {
   try {
     const { fullName, email, password, inviteCode } = req.body;
 
-    const exists = await User.findOne({ email });
-    if (exists) {
-      return res.status(400).json({ message: "User already exists" });
-    }
+    const exists = await mongoose.model("User").findOne({ email });
+    if (exists) return res.status(400).json({ message: "User already exists" });
 
-    const user = new User({ fullName, email, password, inviteCode });
-    await user.save();
+    const User = mongoose.model("User", new mongoose.Schema({
+      fullName: String,
+      email: String,
+      password: String,
+      inviteCode: String
+    }));
 
-    res.status(201).json({ message: "Signup successful" });
-  } catch (err) {
+    await new User({ fullName, email, password, inviteCode }).save();
+    res.json({ message: "Signup successful" });
+
+  } catch {
     res.status(500).json({ message: "Server error" });
   }
 });
 
-// 🔹 LOGIN
+// ✅ Login
 app.post("/login", async (req, res) => {
-  try {
-    const { email, password } = req.body;
+  const { email, password } = req.body;
 
-    const user = await User.findOne({ email, password });
-    if (!user) {
-      return res.status(401).json({ message: "Invalid credentials" });
-    }
+  const User = mongoose.model("User");
+  const user = await User.findOne({ email, password });
 
-    res.json({
-      fullName: user.fullName,
-      email: user.email,
-      inviteCode: user.inviteCode
-    });
-  } catch (err) {
-    res.status(500).json({ message: "Server error" });
-  }
+  if (!user) return res.status(401).json({ message: "Invalid credentials" });
+
+  res.json({
+    fullName: user.fullName,
+    email: user.email,
+    inviteCode: user.inviteCode
+  });
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`Server running on ${PORT}`));
