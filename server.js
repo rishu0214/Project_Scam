@@ -10,7 +10,7 @@ app.use(cors());
 app.use(express.json());
 
 // ✅ Serve frontend
-app.use(express.static(path.join(__dirname, "public")));
+app.use(express.static(__dirname));
 
 // ✅ MongoDB
 mongoose.connect(process.env.MONGO_URI)
@@ -19,7 +19,7 @@ mongoose.connect(process.env.MONGO_URI)
 
 // ✅ Root → index.html
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
+  res.sendFile(path.join(__dirname, "index.html"));
 });
 
 // ✅ Signup
